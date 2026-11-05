@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — FileTrail · EAUED Oyo</title>
+<style>
+  :root{
+    --navy:#12124f;--navy-2:#1b1b6b;--green:#166b3c;--gold:#c9992e;
+    --ink:#14161f;--muted:#5b6172;--line:#e3e6ee;--bg:#f6f7fb;--red:#b42318;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    color:var(--ink);background:var(--bg);
+  }
+  /* ---------- left: brand panel ---------- */
+  .brand{
+    background:
+      radial-gradient(800px 420px at 85% 0%, rgba(201,153,46,.22), transparent 60%),
+      linear-gradient(160deg,var(--navy) 0%,var(--navy-2) 55%,#23238a 100%);
+    color:#fff;padding:44px 46px;display:flex;flex-direction:column;justify-content:space-between;
+    position:relative;overflow:hidden;
+  }
+  .brand:after{
+    content:"";position:absolute;right:-18%;bottom:-22%;width:520px;height:520px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,.07),transparent 70%);
+  }
+  .brand .logo{background:#fff;padding:10px 14px;border-radius:10px;display:inline-block;position:relative;z-index:1}
+  .brand .logo img{height:40px;width:auto;display:block}
+  .brand h1{font-size:clamp(24px,2.4vw,32px);line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;position:relative;z-index:1}
+  .brand h1 em{font-style:normal;color:#f0c869}
+  .brand p{color:#d5d8f2;font-size:15px;max-width:44ch;margin:0;position:relative;z-index:1}
+  .brand .foot{font-size:12.5px;color:#a9aede;position:relative;z-index:1}
+  .brand .motto{color:#f0c869;font-style:italic;margin-bottom:6px}
+
+  /* ---------- right: form ---------- */
+  .panel{display:grid;place-items:center;padding:40px 24px}
+  .card{width:100%;max-width:404px}
+  .card.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}
+  .card.head a{font-size:13.5px;color:var(--muted);text-decoration:none}
+  .card.head a:hover{color:var(--navy)}
+  h2{margin:0 0 6px;font-size:23px;letter-spacing:-.02em;color:var(--navy)}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 24px}
+  label{display:block;font-size:13px;font-weight:600;color:#333a4d;margin-bottom:6px}
+  input[type=email],input[type=password]{
+    width:100%;padding:12px 14px;font-size:15px;border:1px solid #d6dae6;border-radius:10px;
+    background:#fff;color:var(--ink);transition:border-color .15s,box-shadow .15s;font-family:inherit;
+  }
+  input:focus{outline:0;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,107,60,.14)}
+  .field{margin-bottom:16px}
+  .row{display:flex;justify-content:space-between;align-items:center;margin:4px 0 20px;font-size:13px}
+  .row label{display:flex;align-items:center;gap:7px;font-weight:500;color:var(--muted);margin:0;cursor:pointer}
+  button{
+    width:100%;padding:12px 16px;font-size:15px;font-weight:600;color:#fff;background:var(--green);
+    border:0;border-radius:10px;cursor:pointer;font-family:inherit;transition:filter .15s,transform .06s;
+  }
+  button:hover{filter:brightness(1.08)}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.6;cursor:progress}
+  .msg{display:none;margin:0 0 16px;padding:11px 13px;border-radius:10px;font-size:13.5px;line-height:1.4}
+  .msg.show{display:block}
+  .msg.error{background:#fef3f2;border:1px solid #fecdca;color:var(--red)}
+  .msg.ok{background:#ecfdf3;border:1px solid #abefc6;color:#067647}
+  .hint{margin-top:22px;padding:13px 15px;border-radius:10px;background:#f0f4ff;border:1px solid #dbe3fb;font-size:12.5px;color:#3b4a6b;line-height:1.5}
+  .hint b{color:var(--navy)}
+  .note{margin-top:18px;font-size:11.5px;color:#8a90a4;text-align:center;line-height:1.5}
+
+  @media (max-width:860px){
+    body{grid-template-columns:1fr}
+    .brand{padding:28px 24px;gap:22px}
+    .brand h1{font-size:22px}
+    .brand p,.brand .foot{display:none}
+    .panel{padding:30px 20px 50px}
+  }
+</style>
+</head>
+<body>
+
+<div class="brand">
+  <div>
+    <div class="logo"><img src="/assets/eaued-logo.png" alt="Emmanuel Alayande University of Education, Oyo"></div>
+  </div>
+  <div>
+    <h1>Every file has a location.<br>Now the Registry can <em>prove it</em>.</h1>
+    <p>FileTrail records every handoff — who received a file, when, and which office has been holding it. Sign in to see the movement ledger.</p>
+  </div>
+  <div class="foot">
+    <div class="motto">Knowledge, Truth and Service</div>
+    Emmanuel Alayande University of Education, Oyo · Registry
+  </div>
+</div>
+
+<div class="panel">
+  <div class="card">
+    <div class="card head">
+      <div>
+        <h2>Sign in</h2>
+        <p class="sub">Use your Registry account.</p>
+      </div>
+      <a href="/">← Home</a>
+    </div>
+
+    <div id="msg" class="msg" role="alert" aria-live="polite"></div>
+
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" autocomplete="username"
+               placeholder="you@eauedoyo.edu.ng" required autofocus>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password"
+               placeholder="••••••••" required>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="show"> Show password</label>
+        <span style="color:#8a90a4">Sessions end after 8 hours</span>
+      </div>
+      <button type="submit" id="submit">Sign in</button>
+    </form>
+
+    <div class="hint">
+      <b>Demo account (v0.1)</b><br>
+      Email: <code>main@gmail.com</code><br>
+      Password: <code>111111111</code><br>
+      <span style="color:#8a90a4">Remove this box before the system goes live.</span>
+    </div>
+
+    <p class="note">
+      Not an official University system. Independent student project,<br>
+      Department of Computer Science.
+    </p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById('loginForm');
+  var msg = document.getElementById('msg');
+  var submit = document.getElementById('submit');
+  var pw = document.getElementById('password');
+  var show = document.getElementById('show');
+
+  show.addEventListener('change', function () {
+    pw.type = show.checked ? 'text' : 'password';
+  });
+
+  function say(text, kind) {
+    msg.textContent = text;
+    msg.className = 'msg show ' + (kind || 'error');
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    msg.className = 'msg';
+    var email = document.getElementById('email').value.trim();
+    var password = pw.value;
+
+    if (!email || !password) {
+      say('Enter both your email and password.');
+      return;
+    }
+
+    submit.disabled = true;
+    submit.textContent = 'Signing in…';
+
+    try {
+      var res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ email: email, password: password })
+      });
+      var data = await res.json().catch(function () { return {}; });
+
+      if (res.ok && data.ok) {
+        say('Signed in. Taking you to the ledger…', 'ok');
+        window.location.href = data.redirect || '/dashboard';
+        return;
+      }
+      say(data.error || 'Sign in failed. Please try again.');
+    } catch (err) {
+      say('Cannot reach the server. Check that it is running, then try again.');
+    } finally {
+      submit.disabled = false;
+      submit.textContent = 'Sign in';
+    }
+  });
+})();
+</script>
+</body>
+</html>

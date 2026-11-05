@@ -70,6 +70,26 @@ Deliberately NOT in v0.1: file uploads/scans, SMS notifications, mobile app, int
 5. Offline-tolerant? (Registry desktops, patchy power and network — this affects architecture.)
 6. Who operates the pilot day to day — us, or a staff member we train?
 
+## Running it
+
+```bash
+python3 server/app.py         # http://localhost:8000  (no pip install needed)
+python3 tests/test_auth.py    # 39 checks, end to end over real HTTP
+```
+
+Seeded login (v0.1 only — remove before go-live): `main@gmail.com` / `111111111`
+
+```
+web/index.html      public landing page (EAUED branding, single self-contained file)
+web/login.html      sign-in page
+web/dashboard.html  the movement ledger, derived from v_aging
+server/app.py       standard-library HTTP server + JSON API + session auth
+server/security.py  PBKDF2 password hashing, session tokens
+db/schema.sql       ledger tables + views
+db/auth.sql         users, sessions, login_attempts
+db/seed.sql         demo files (the real registry walk)
+```
+
 ## Roadmap
 
 - [ ] **Phase 0 — Recon.** Sit in a registry. Map one real flow end to end with numbers: steps, days, offices, stall points, missing-file frequency.
@@ -94,3 +114,8 @@ _Format: date — decision — reason_
 
 - **2026-11-05** — Project scaffolded locally as `filetrail/`. GitHub sync pending (see `docs/github-setup.md`). — Need a home for notes and code before the first commit.
 - **2026-11-05** — Build proof at our own university, sell revenue outside it. — Avoids the "student project, no budget" trap.
+- **2026-11-05** — Target institution named: **Emmanuel Alayande University of Education, Oyo (EAUED)**. — It is our own school; access is the moat.
+- **2026-11-05** — Store movements, not documents (ADR 001). — A document store solves a pain nobody is paying for, and drags us into free archive scanning.
+- **2026-11-05** — Passwords are stored as PBKDF2 hashes, never plain text, even for the demo account. — The moment a registry password sits readable in a DB, the product is a liability.
+- **2026-11-05** — Server-side sessions in SQLite behind an HttpOnly cookie, 8-hour expiry. — Logout must really end the session; a stolen cookie should die with it.
+- **2026-11-05** — No pricing on the public site yet. — Decision by the owner; sell the pilot, not the package.

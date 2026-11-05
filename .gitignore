@@ -38,3 +38,6 @@ Thumbs.db
 logs/
 *.log
 npm-debug.log*
+filetrail.db
+filetrail.db-wal
+filetrail.db-shm
