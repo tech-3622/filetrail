@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+dist/
+build/
+out/
+.next/
+*.tsbuildinfo
+
+# env & secrets — never commit these
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# databases (local dev)
+*.sqlite
+*.sqlite3
+*.db
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# editors & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# logs
+logs/
+*.log
+npm-debug.log*
