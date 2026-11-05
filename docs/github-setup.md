@@ -89,3 +89,18 @@ filetrail/
 
 We commit the **thinking** too, not just the code. When a registrar asks "why did you
 build it this way?", the answer is in the repo with a date on it.
+
+---
+
+## Incident note — 2026-11-05 (read this)
+
+A **classic** personal access token was shared in chat and used once to push the initial
+commit. Its scopes were: `repo`, `workflow`, `admin:org`, `admin:public_key`,
+`admin:org_hook`, `delete_repo`, `gist`, `user`, `admin:enterprise`,
+`write:packages`, `project`, and more.
+
+That is effectively **full control of the GitHub account**, not access to one repo.
+It has been revoked on the owner's side and replaced with a fine-grained token.
+
+**Rule going forward:** fine-grained token → one repository → `Contents: Read and write`
+only → 30-day expiry. Never a classic token, never `admin:*`, never "all repositories".
