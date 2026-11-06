@@ -83,6 +83,26 @@ A file's current office is **derived** from its newest movement. The `movements`
 table is append-only, and two database triggers abort any `UPDATE` or `DELETE`
 against it — so history cannot be quietly rewritten, by anyone, including an admin.
 
+## Reports and exports
+
+| Route | What it gives you |
+|---|---|
+| `GET /reports` | Aging report screen — filter by days and office, print-ready |
+| `GET /api/reports/aging?days=10&office=EXAM` | the same data as JSON |
+| `GET /api/reports/aging.csv` | CSV download for emailing or printing |
+| `GET /api/reports/files.csv` | full ledger export |
+
+CSV decisions that matter in a real office:
+
+- **UTF-8 with a BOM**, so Excel on a Windows machine shows the en-dashes and names
+  correctly instead of mojibake.
+- **Context lines at the top** (institution, generated at, prepared by, filter used),
+  because a CSV detached from its email is otherwise unreadable.
+- `Cache-Control: no-store`, so a shared machine does not keep a stale copy.
+
+Reports summarise by **office**, not by person — deliberately. The name on each row is the
+person who signed for the file on arrival; it is there to ask a question, not to open a file.
+
 ## Accounts and roles
 
 One admin account creates an account for each person in each office. Staff never share a login —
@@ -112,6 +132,7 @@ python3 server/app.py         # http://localhost:8000  (no pip install needed)
 python3 tests/test_auth.py    # 40 checks, end to end over real HTTP
 python3 tests/test_accounts.py # 65 checks: accounts, roles, hierarchy
 python3 tests/test_files.py   # 37 checks: register, move, close, append-only
+python3 tests/test_reports.py # 37 checks: aging report + CSV correctness
 ```
 
 Seeded login (v0.1 only — remove before go-live): `main@gmail.com` / `111111111`
@@ -121,6 +142,7 @@ web/index.html      public landing page (EAUED branding, single self-contained f
 web/login.html      sign-in page
 web/dashboard.html  the movement ledger, derived from v_aging
 web/admin.html      office accounts: create, disable, reset
+web/reports.html    aging report: filter, print, CSV download
 web/change-password.html  forced first-sign-in password change
 server/app.py       standard-library HTTP server + JSON API + session auth
 server/security.py  PBKDF2 password hashing, session tokens
@@ -163,3 +185,5 @@ _Format: date — decision — reason_
 - **2026-11-06** — Register / move / close are the only three write operations. — If a feature cannot be expressed as "this file moved", it belongs in v0.2.
 - **2026-11-06** — Closing a file is itself a movement record, not a delete. — A closed file must still explain itself years later.
 - **2026-11-06** — API handlers wrapped so an unexpected error returns 500 instead of dropping the connection. — A dropped connection looks like "the system is broken"; a 500 with a log line looks like a bug we can fix.
+- **2026-11-06** — Reports group by office, never by individual. — The system must not become a tool for hunting clerks; that is how adoption dies.
+- **2026-11-06** — CSV carries UTF-8 BOM + context header lines. — The file will be opened in Excel and forwarded without explanation; it has to explain itself.

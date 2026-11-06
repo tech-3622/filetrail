@@ -34,6 +34,8 @@ Security decisions (each one is deliberate)
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 import os
 import re
@@ -44,7 +46,7 @@ from datetime import datetime, timedelta, timezone
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from security import (  # noqa: E402
@@ -218,6 +220,68 @@ def record_attempt(email: str, ip: str, success: bool) -> None:
                 "DELETE FROM login_attempts WHERE email = ? AND ip = ?", (email, ip)
             )
     conn.close()
+
+
+def report_filters(query: dict) -> tuple[int, str | None]:
+    """Read ?days= and ?office= defensively — this input comes from a URL."""
+    try:
+        min_days = max(0, min(365, int((query.get("days") or ["10"])[0])))
+    except (TypeError, ValueError):
+        min_days = 10
+    office = (query.get("office") or [""])[0].strip().upper() or None
+    if office and not re.fullmatch(r"[A-Z0-9]{1,10}", office):
+        office = None
+    return min_days, office
+
+
+def aging_rows(min_days: int, office: str | None) -> list[dict]:
+    conn = db()
+    sql = """SELECT w.file_number, w.subject, w.subject_name, w.file_type,
+                    w.current_office, w.current_office_code, w.status, w.days_held,
+                    w.since, w.signature,
+                    CASE WHEN w.days_held >= 30 THEN 'red'
+                         WHEN w.days_held >= 10 THEN 'amber'
+                         ELSE 'green' END AS flag
+               FROM v_where_is w
+              WHERE w.status NOT IN ('closed') AND w.days_held >= ?"""
+    params: list = [min_days]
+    if office:
+        sql += " AND w.current_office_code = ?"
+        params.append(office)
+    sql += " ORDER BY w.days_held DESC, w.file_number"
+    rows = [dict(r) for r in conn.execute(sql, params).fetchall()]
+    conn.close()
+    return rows
+
+
+def aging_csv(rows: list[dict], min_days: int, office: str | None,
+              prepared_by: str) -> bytes:
+    """
+    A report someone will email or print. Two deliberate choices:
+
+      * utf-8-sig, so Excel on a Nigerian Windows machine shows the en-dashes
+        and accents instead of mojibake.
+      * three header lines of context (when, by whom, what filter) before the
+        data — because a CSV detached from its email is otherwise unreadable.
+    """
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\r\n", quoting=csv.QUOTE_MINIMAL)
+    w.writerow(["FileTrail — aging report"])
+    w.writerow(["Institution", "Emmanuel Alayande University of Education, Oyo"])
+    w.writerow(["Generated", datetime.now().strftime("%Y-%m-%d %H:%M")])
+    w.writerow(["Prepared by", prepared_by])
+    w.writerow(["Filter", f"sitting {min_days}+ days" +
+                (f", office {office}" if office else ""), "Files", len(rows)])
+    w.writerow([])
+    w.writerow(["File number", "Subject", "Name on file", "Type",
+                "Current office", "Held (days)", "Since", "Signed at receipt", "Flag"])
+    for r in rows:
+        w.writerow([
+            r["file_number"], r["subject"], r["subject_name"] or "", r["file_type"],
+            r["current_office"], r["days_held"], (r["since"] or "")[:10],
+            r["signature"] or "", r["flag"],
+        ])
+    return ("\ufeff" + buf.getvalue()).encode("utf-8")
 
 
 def user_payload(row) -> dict:
@@ -590,6 +654,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._redirect("/login")
             return self._static("change-password.html")
 
+        if path == "/reports":
+            user = session_user(self._session_token())
+            if not user:
+                return self._redirect("/login")
+            return self._static("reports.html")
+
         if path == "/admin":
             user = session_user(self._session_token())
             if not user:
@@ -667,6 +737,63 @@ class Handler(BaseHTTPRequestHandler):
             ).fetchall()
             conn.close()
             return self._json(200, {"ok": True, "files": [dict(r) for r in rows]})
+
+        # ---- aging report (JSON) -----------------------------------------
+        if path == "/api/reports/aging":
+            user = session_user(self._session_token())
+            if not user:
+                return self._json(401, {"ok": False, "error": "not signed in"})
+            query = parse_qs(urlparse(self.path).query)
+            min_days, office = report_filters(query)
+            rows = aging_rows(min_days, office)
+            return self._json(200, {"ok": True, "min_days": min_days,
+                                    "office": office, "rows": rows})
+
+        # ---- aging report (CSV download) ---------------------------------
+        if path == "/api/reports/aging.csv":
+            user = session_user(self._session_token())
+            if not user:
+                # A browser following a download link cannot show JSON, so send
+                # a plain 401 body rather than a redirect into the login HTML.
+                return self._send(401, b"You must sign in to download this report.\n",
+                                  "text/plain; charset=utf-8")
+            query = parse_qs(urlparse(self.path).query)
+            min_days, office = report_filters(query)
+            rows = aging_rows(min_days, office)
+            data = aging_csv(rows, min_days, office, prepared_by=user["full_name"])
+            stamp = datetime.now().strftime("%Y-%m-%d")
+            filename = f"filetrail-aging-{stamp}.csv"
+            return self._send(200, data, "text/csv; charset=utf-8", {
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Cache-Control": "no-store",
+            })
+
+        # ---- full ledger export (CSV) ------------------------------------
+        if path == "/api/reports/files.csv":
+            user = session_user(self._session_token())
+            if not user:
+                return self._send(401, b"You must sign in to download this report.\n",
+                                  "text/plain; charset=utf-8")
+            rows = aging_rows(0, None)
+            buf = io.StringIO()
+            w = csv.writer(buf, lineterminator="\r\n")
+            w.writerow(["FileTrail — ledger export"])
+            w.writerow(["Institution", "Emmanuel Alayande University of Education, Oyo"])
+            w.writerow(["Generated", datetime.now().strftime("%Y-%m-%d %H:%M")])
+            w.writerow(["Prepared by", user["full_name"], "Files", len(rows)])
+            w.writerow([])
+            w.writerow(["File number", "Subject", "Name on file", "Type", "Current office",
+                        "Held (days)", "Since", "Signed at receipt", "Flag"])
+            for r in rows:
+                w.writerow([r["file_number"], r["subject"], r["subject_name"] or "",
+                            r["file_type"], r["current_office"], r["days_held"],
+                            (r["since"] or "")[:10], r["signature"] or "", r["flag"]])
+            data = ("\ufeff" + buf.getvalue()).encode("utf-8")
+            stamp = datetime.now().strftime("%Y-%m-%d")
+            return self._send(200, data, "text/csv; charset=utf-8", {
+                "Content-Disposition": f'attachment; filename="filetrail-ledger-{stamp}.csv"',
+                "Cache-Control": "no-store",
+            })
 
         # ---- one file, with its full trail -------------------------------
         if (m := re.fullmatch(r"/api/files/([^/]+)", path)):

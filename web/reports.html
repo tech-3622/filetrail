@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aging report — FileTrail · EAUED Oyo</title>
+<style>
+  :root{--navy:#12124f;--green:#166b3c;--gold:#c9992e;--ink:#14161f;--muted:#5b6172;
+        --line:#e3e6ee;--bg:#f6f7fb;--card:#fff;--red:#b42318;--amber:#b54708;--ok:#067647}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;line-height:1.55}
+  header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  header .wrap{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand img{height:36px;width:auto}
+  .brand .d{width:1px;height:28px;background:var(--line)}
+  .brand strong{color:var(--navy);font-size:16px}
+  .brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:.03em}
+  .who{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+  .who b{color:var(--navy)}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:9px;padding:8px 13px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block}
+  .btn:hover{border-color:#c7ccda}
+  .btn-primary{background:var(--green);color:#fff;border:0}
+  .btn-primary:hover{filter:brightness(1.08)}
+  .btn-sm{padding:6px 11px;font-size:12.5px}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+  main{padding:26px 0 70px}
+  h1{font-size:24px;margin:0 0 4px;letter-spacing:-.02em;color:var(--navy)}
+  .top p{margin:0;color:var(--muted);font-size:14px;max-width:70ch}
+  .top{margin-bottom:20px}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fff;border:1px solid var(--line);
+           border-radius:12px;padding:13px 15px;margin-bottom:20px}
+  select,input{padding:9px 12px;border:1px solid #d6dae6;border-radius:9px;font-size:13.5px;font-family:inherit;background:#fff;color:var(--ink)}
+  select:focus,input:focus{outline:0;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,107,60,.14)}
+  .filters .spacer{flex:1}
+  .filters label{font-size:12.5px;color:var(--muted);font-weight:600;margin-right:4px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px}
+  .stat .n{font-size:25px;font-weight:700;color:var(--navy);line-height:1.1;letter-spacing:-.02em}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:4px}
+  .tablecard{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:12px 15px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{background:#f2f4fa;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  tr:last-child td{border-bottom:0}
+  tbody tr:hover td{background:#fafbff}
+  td.file{font-weight:600;color:var(--navy);white-space:nowrap}
+  td.days{font-weight:700}
+  .flag{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+  .flag.red{background:var(--red)} .flag.amber{background:var(--gold)} .flag.green{background:var(--ok)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid}
+  .pill.red{background:#fef3f2;color:var(--red);border-color:#fecdca}
+  .pill.amber{background:#fffaeb;color:var(--amber);border-color:#fedf89}
+  .pill.green{background:#ecfdf3;color:var(--ok);border-color:#abefc6}
+  .empty{padding:40px;text-align:center;color:var(--muted);font-size:14px}
+  .footnote{margin-top:14px;font-size:12px;color:#8a90a4}
+  .note{background:#f6f8ff;border:1px solid #dbe3fb;border-radius:11px;padding:13px 15px;font-size:13px;color:#3b4a6b;margin-bottom:20px}
+  .note b{color:var(--navy)}
+  @media (max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}}
+  @media print{
+    header,.filters,.btn,.footnote,.note{display:none!important}
+    body{background:#fff}
+    .tablecard{border:0;box-shadow:none}
+    th{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .printhead{display:block!important;margin-bottom:14px}
+  }
+  .printhead{display:none}
+  .printhead h2{margin:0;font-size:18px;color:var(--navy)}
+  .printhead p{margin:4px 0 0;font-size:12px;color:#444}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <img src="/assets/eaued-logo.png" alt="EAUED">
+      <div class="d"></div>
+      <div><strong>FileTrail</strong><small>REGISTRY · REPORTS</small></div>
+    </div>
+    <div class="who">
+      <a class="btn" href="/dashboard">← Ledger</a>
+      <span><b id="userName">…</b></span>
+      <button class="btn" id="logout">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="printhead">
+    <h2>FileTrail — aging report</h2>
+    <p>Emmanuel Alayande University of Education, Oyo · Registry<br>
+       <span id="printMeta"></span></p>
+  </div>
+
+  <div class="top">
+    <h1>What is sitting too long?</h1>
+    <p>Files held longer than the threshold, worst first. This is the list to open a Monday meeting with.</p>
+  </div>
+
+  <div class="note">
+    <b>Read this before acting on it.</b> Reports group by <b>office</b>, not by person — the aim is to
+    show where a queue is stuck, not to blame a clerk. The name on each row is the person who signed
+    for the file on arrival; use it to ask a question, not to open a file.
+  </div>
+
+  <div class="filters">
+    <label for="days">Held more than</label>
+    <select id="days">
+      <option value="3">3 days</option>
+      <option value="7">7 days</option>
+      <option value="10" selected>10 days</option>
+      <option value="14">14 days</option>
+      <option value="30">30 days</option>
+    </select>
+    <label for="office">Office</label>
+    <select id="office"><option value="">All offices</option></select>
+    <div class="spacer"></div>
+    <a class="btn btn-sm" id="csvAging" href="/api/reports/aging.csv?days=10">↓ Download CSV</a>
+    <a class="btn btn-sm" id="csvFiles" href="/api/reports/files.csv">↓ Full ledger</a>
+    <button class="btn btn-sm" id="printBtn">Print</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="sCount">—</div><div class="l">Files over the threshold</div></div>
+    <div class="stat"><div class="n" id="sWorst">—</div><div class="l">Worst case (days)</div></div>
+    <div class="stat"><div class="n" id="sAvg">—</div><div class="l">Average days held</div></div>
+    <div class="stat"><div class="n" id="sOffice">—</div><div class="l">Offices involved</div></div>
+  </div>
+
+  <div class="tablecard">
+    <table>
+      <thead>
+        <tr><th>File number</th><th>Subject</th><th>Current office</th><th>Held</th><th>Since</th><th>Signed at receipt</th><th>Flag</th></tr>
+      </thead>
+      <tbody id="rows"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <p class="footnote">
+    Held-days is derived from the newest movement on each file. Closed files are excluded.
+    CSV downloads are UTF-8 with a byte-order mark so Excel opens them correctly.
+  </p>
+</main>
+
+<script>
+(function () {
+  var rowsEl = document.getElementById('rows');
+  var daysEl = document.getElementById('days');
+  var officeEl = document.getElementById('office');
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+  function updateCsvLinks(){
+    document.getElementById('csvAging').href =
+      '/api/reports/aging.csv?days=' + encodeURIComponent(daysEl.value) +
+      (officeEl.value ? '&office=' + encodeURIComponent(officeEl.value) : '');
+  }
+
+  async function load(){
+    var url = '/api/reports/aging?days=' + encodeURIComponent(daysEl.value) +
+              (officeEl.value ? '&office=' + encodeURIComponent(officeEl.value) : '');
+    var res = await fetch(url, {credentials:'same-origin'});
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    var d = await res.json();
+    var list = d.rows || [];
+
+    document.getElementById('sCount').textContent = list.length;
+    document.getElementById('sWorst').textContent = list.length ? list[0].days_held : 0;
+    document.getElementById('sAvg').textContent = list.length
+      ? (list.reduce(function(a,r){return a+Number(r.days_held);},0)/list.length).toFixed(1) : '0';
+    var offices = {};
+    list.forEach(function(r){ if(r.current_office_code) offices[r.current_office_code]=1; });
+    document.getElementById('sOffice').textContent = Object.keys(offices).length;
+
+    document.getElementById('printMeta').textContent =
+      'Filter: held more than ' + d.min_days + ' days' +
+      (d.office ? ', office ' + d.office : ', all offices') +
+      ' · ' + list.length + ' file(s) · generated ' + new Date().toLocaleString();
+
+    if (!list.length) {
+      rowsEl.innerHTML = '<tr><td colspan="7" class="empty">Nothing has been sitting longer than ' +
+        d.min_days + ' days. That is the good news — print it anyway.</td></tr>';
+      updateCsvLinks();
+      return;
+    }
+
+    rowsEl.innerHTML = list.map(function(r){
+      return '<tr>' +
+        '<td class="file">' + esc(r.file_number) + '</td>' +
+        '<td>' + esc(r.subject) +
+          (r.subject_name ? '<br><span style="color:#8a90a4;font-size:12px">' + esc(r.subject_name) + '</span>' : '') + '</td>' +
+        '<td>' + esc(r.current_office) + '</td>' +
+        '<td class="days">' + r.days_held + '</td>' +
+        '<td style="color:#5b6172;font-size:12.5px">' + esc((r.since||'').slice(0,10)) + '</td>' +
+        '<td>' + esc(r.signature || '—') + '</td>' +
+        '<td><span class="flag ' + (r.flag||'green') + '"></span><span class="pill ' + (r.flag||'green') + '">' + esc(r.flag) + '</span></td>' +
+      '</tr>';
+    }).join('');
+    updateCsvLinks();
+  }
+
+  async function loadOffices(){
+    var res = await fetch('/api/offices', {credentials:'same-origin'});
+    var d = await res.json();
+    officeEl.innerHTML = '<option value="">All offices</option>' + (d.offices||[]).map(function(o){
+      return '<option value="' + esc(o.code) + '">' + esc(o.code + ' — ' + o.name) + '</option>';
+    }).join('');
+  }
+
+  daysEl.addEventListener('change', load);
+  officeEl.addEventListener('change', load);
+  document.getElementById('printBtn').addEventListener('click', function(){ window.print(); });
+  document.getElementById('logout').addEventListener('click', async function(){
+    await fetch('/api/logout',{method:'POST',credentials:'same-origin'});
+    window.location.href='/';
+  });
+
+  (async function boot(){
+    var me = await fetch('/api/me', {credentials:'same-origin'});
+    if (me.status === 401) { window.location.href = '/login'; return; }
+    var d = await me.json();
+    if (d.user.must_change_password) { window.location.href = '/change-password'; return; }
+    document.getElementById('userName').textContent = d.user.full_name;
+    await loadOffices();
+    await load();
+  })();
+})();
+</script>
+</body>
+</html>
