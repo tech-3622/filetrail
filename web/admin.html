@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accounts — FileTrail · EAUED Oyo</title>
+<style>
+  :root{--navy:#12124f;--green:#166b3c;--gold:#c9992e;--ink:#14161f;--muted:#5b6172;
+        --line:#e3e6ee;--bg:#f6f7fb;--card:#fff;--red:#b42318;--amber:#b54708;--ok:#067647}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;line-height:1.55}
+  header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+  header .wrap{max-width:1120px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand img{height:36px;width:auto}
+  .brand .d{width:1px;height:28px;background:var(--line)}
+  .brand strong{color:var(--navy);font-size:16px}
+  .brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:.03em}
+  .who{display:flex;align-items:center;gap:12px;font-size:13.5px;color:var(--muted)}
+  .who b{color:var(--navy)}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:9px;padding:8px 14px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block}
+  .btn:hover{border-color:#c7ccda}
+  .btn-primary{background:var(--green);color:#fff;border:0}
+  .btn-primary:hover{filter:brightness(1.08)}
+  .btn-sm{padding:5px 10px;font-size:12.5px}
+  .btn-danger{color:var(--red);border-color:#fecdca;background:#fff5f4}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+  main{padding:28px 0 70px}
+  h1{font-size:24px;margin:0 0 4px;letter-spacing:-.02em;color:var(--navy)}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .top p{margin:0;color:var(--muted);font-size:14px;max-width:62ch}
+  .grid{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start}
+  .tablecard{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{background:#f2f4fa;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  tr:last-child td{border-bottom:0}
+  tr.inactive td{opacity:.55}
+  td.name{font-weight:600;color:var(--navy)}
+  td.name small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid}
+  .pill.admin,.pill.registrar{background:#eef1fd;color:var(--navy);border-color:#cfd6f5}
+  .pill.registry{background:#ecfdf3;color:var(--ok);border-color:#abefc6}
+  .pill.department,.pill.exams,.pill.faculty,.pill.bursary{background:#fffaeb;color:var(--amber);border-color:#fedf89}
+  .pill.staff{background:#f2f4f7;color:var(--muted);border-color:#e3e6ee}
+  .pill.off{background:#fef3f2;color:var(--red);border-color:#fecdca}
+  .actions{display:flex;gap:6px;flex-wrap:wrap}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .panel h2{font-size:15px;margin:0 0 14px;color:var(--navy)}
+  label{display:block;font-size:12.5px;font-weight:600;color:#333a4d;margin:0 0 5px}
+  input,select{width:100%;padding:9px 11px;font-size:13.5px;border:1px solid #d6dae6;border-radius:8px;font-family:inherit;background:#fff;color:var(--ink)}
+  input:focus,select:focus{outline:0;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,107,60,.14)}
+  .field{margin-bottom:12px}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  .msg{display:none;padding:11px 13px;border-radius:9px;font-size:13px;margin-bottom:14px;line-height:1.45}
+  .msg.show{display:block}
+  .msg.error{background:#fef3f2;border:1px solid #fecdca;color:var(--red)}
+  .msg.ok{background:#ecfdf3;border:1px solid #abefc6;color:#067647}
+  .msg.warn{background:#fffaeb;border:1px solid #fedf89;color:var(--amber)}
+  code{background:#f2f4fa;padding:2px 6px;border-radius:5px;font-size:13px;letter-spacing:.04em;font-weight:700}
+  .tempbox{display:none;margin-bottom:14px;padding:14px;border:1px dashed #f0b27a;background:#fffaf3;border-radius:10px}
+  .tempbox.show{display:block}
+  .tempbox .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);font-weight:700;margin-bottom:6px}
+  .tempbox .pw{font-size:19px;font-weight:800;letter-spacing:.06em;color:var(--navy);font-family:ui-monospace,Menlo,Consolas,monospace}
+  .tempbox p{margin:8px 0 0;font-size:12px;color:#8a6640;line-height:1.5}
+  .footnote{margin-top:14px;font-size:12px;color:#8a90a4}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <img src="/assets/eaued-logo.png" alt="EAUED">
+      <div class="d"></div>
+      <div><strong>FileTrail</strong><small>REGISTRY · ACCOUNTS</small></div>
+    </div>
+    <div class="who">
+      <a class="btn" href="/dashboard">← Ledger</a>
+      <span><b id="me">…</b><br><span id="meRole" style="font-size:12px"></span></span>
+      <button class="btn" id="logout">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="top">
+    <div>
+      <h1>Office accounts</h1>
+      <p>
+        Each office signs for the files it receives. Create one account per person, not per office —
+        the audit trail is only worth anything if it names a human being.
+      </p>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div id="pageMsg" class="msg"></div>
+      <div class="tablecard">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Office</th><th>Role</th><th>Last sign-in</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="rows"><tr><td colspan="5" style="padding:30px;text-align:center;color:#5b6172">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="footnote">
+        You can only manage accounts below your own level. Nobody can disable themselves, and
+        nobody can create an account stronger than their own.
+      </p>
+    </div>
+
+    <div class="panel">
+      <h2>Create an account</h2>
+      <div id="formMsg" class="msg"></div>
+      <div id="tempBox" class="tempbox">
+        <div class="lbl">Temporary password — shown once</div>
+        <div class="pw" id="tempPw">—</div>
+        <p id="tempFor"></p>
+        <p><b>Give this to the person directly.</b> It cannot be retrieved again. They will be
+           asked to choose their own password the first time they sign in.</p>
+      </div>
+
+      <form id="createForm">
+        <div class="field">
+          <label for="full_name">Full name</label>
+          <input id="full_name" name="full_name" placeholder="e.g. Musa Ibrahim" required>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="e.g. m.ibrahim@eauedoyo.edu.ng" required>
+        </div>
+        <div class="field">
+          <label for="role">Role</label>
+          <select id="role" name="role">
+            <option value="registry">Registry clerk</option>
+            <option value="department">Department officer</option>
+            <option value="exams">Exams &amp; Records officer</option>
+            <option value="faculty">Faculty officer</option>
+            <option value="bursary">Bursary officer</option>
+            <option value="staff">Staff (read only)</option>
+            <option value="registrar">Registrar</option>
+          </select>
+          <div class="hint">A Registrar can manage accounts and see everything. Choose the lowest role that does the job.</div>
+        </div>
+        <div class="field">
+          <label for="office_id">Office</label>
+          <select id="office_id" name="office_id"><option value="">Loading offices…</option></select>
+        </div>
+        <button class="btn btn-primary" type="submit" id="createBtn" style="width:100%;padding:11px">Create account</button>
+      </form>
+      <p class="footnote">The person is not emailed a password. You hand it over in person, or read it over the phone.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  var rows = document.getElementById('rows');
+  var roleSel = document.getElementById('role');
+  var officeSel = document.getElementById('office_id');
+  var formMsg = document.getElementById('formMsg');
+  var pageMsg = document.getElementById('pageMsg');
+  var tempBox = document.getElementById('tempBox');
+  var offices = [];
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function say(el,text,kind){el.textContent=text;el.className='msg show '+(kind||'error');}
+  function clear(el){el.className='msg';}
+
+  function roleLabel(r){
+    return ({admin:'Admin',registrar:'Registrar',registry:'Registry',department:'Department',
+             exams:'Exams & Records',faculty:'Faculty',bursary:'Bursary',staff:'Staff'})[r]||r;
+  }
+
+  // suggested office for the chosen role, so clerks don't have to think
+  var ROLE_KIND = {registry:'registry',department:'department',exams:'exams',faculty:'faculty',
+                   bursary:'bursary',registrar:'registry',admin:'registry',staff:null};
+
+  function suggestOffice(){
+    var kind = ROLE_KIND[roleSel.value];
+    if (!kind) return;
+    var match = offices.filter(function(o){return o.kind===kind;})[0];
+    if (match) officeSel.value = match.id;
+  }
+
+  async function loadOffices(){
+    var res = await fetch('/api/offices', {credentials:'same-origin'});
+    var d = await res.json();
+    offices = d.offices || [];
+    officeSel.innerHTML = offices.map(function(o){
+      return '<option value="'+o.id+'">'+esc(o.code+' — '+o.name)+'</option>';
+    }).join('');
+    suggestOffice();
+  }
+
+  async function loadUsers(){
+    var res = await fetch('/api/users', {credentials:'same-origin'});
+    if (res.status === 401) { window.location.href='/login'; return; }
+    var d = await res.json();
+    if (!d.ok) { rows.innerHTML='<tr><td colspan="5" style="padding:24px;color:#b42318">'+esc(d.error||'Could not load accounts.')+'</td></tr>'; return; }
+
+    document.getElementById('me').textContent = d.users.filter(function(u){return u.email==='';})[0] ? '' : '';
+    document.getElementById('meRole').textContent = 'Signed in';
+
+    rows.innerHTML = d.users.map(function(u){
+      var actions = '';
+      if (u.can_manage && u.is_active) {
+        actions =
+          '<button class="btn btn-sm" data-act="reset" data-id="'+u.id+'" data-name="'+esc(u.full_name)+'">Reset password</button>' +
+          '<button class="btn btn-sm btn-danger" data-act="off" data-id="'+u.id+'" data-name="'+esc(u.full_name)+'">Disable</button>';
+      } else if (u.can_manage && !u.is_active) {
+        actions = '<button class="btn btn-sm" data-act="on" data-id="'+u.id+'" data-name="'+esc(u.full_name)+'">Enable</button>';
+      } else {
+        actions = '<span style="color:#8a90a4;font-size:12px">—</span>';
+      }
+      return '<tr class="'+(u.is_active?'':'inactive')+'">' +
+        '<td class="name">'+esc(u.full_name)+'<small>'+esc(u.email)+'</small></td>' +
+        '<td>'+esc(u.office_name||'—')+'</td>' +
+        '<td><span class="pill '+esc(u.role)+'">'+esc(roleLabel(u.role))+'</span>' +
+             (u.must_change_password?' <span class="pill off">temp password</span>':'') +
+             (u.is_active?'':' <span class="pill off">disabled</span>')+'</td>' +
+        '<td style="color:#5b6172;font-size:12.5px">'+esc(u.last_login_at||'never')+'</td>' +
+        '<td><div class="actions">'+actions+'</div></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  rows.addEventListener('click', async function(e){
+    var btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    var act = btn.getAttribute('data-act');
+    var id = btn.getAttribute('data-id');
+    var name = btn.getAttribute('data-name');
+
+    var url = '/api/users/'+id+'/'+(act==='reset'?'reset':'status');
+    var payload = {};
+    if (act==='off') payload = {enable:false};
+    if (act==='on')  payload = {enable:true};
+
+    if (act==='off' && !confirm('Disable '+name+'?\n\nThey will be signed out immediately and cannot sign in.')) return;
+    if (act==='on' && !confirm('Enable '+name+'?')) return;
+    if (act==='reset' && !confirm('Reset the password for '+name+'?\n\nThey will be signed out and a new temporary password will be shown to you once.')) return;
+
+    clear(pageMsg);
+    var res = await fetch(url, {method:'POST', credentials:'same-origin',
+      headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    var d = await res.json().catch(function(){return {};});
+    if (!d.ok) { say(pageMsg, d.error||'That did not work.', 'error'); return; }
+
+    say(pageMsg, d.message||'Done.', 'ok');
+    if (d.temp_password) {
+      tempBox.classList.add('show');
+      document.getElementById('tempPw').textContent = d.temp_password;
+      document.getElementById('tempFor').innerHTML = 'For <b>'+esc(name)+'</b>. Shown once — copy it now.';
+      tempBox.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+    loadUsers();
+  });
+
+  document.getElementById('createForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    clear(formMsg);
+    var btn = document.getElementById('createBtn');
+    btn.disabled = true; btn.textContent = 'Creating…';
+
+    var payload = {
+      full_name: document.getElementById('full_name').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      role: roleSel.value,
+      office_id: officeSel.value ? Number(officeSel.value) : null
+    };
+
+    try {
+      var res = await fetch('/api/users', {method:'POST', credentials:'same-origin',
+        headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      var d = await res.json().catch(function(){return {};});
+      if (!d.ok) { say(formMsg, d.error||'Could not create the account.', 'error'); return; }
+
+      say(formMsg, 'Account created.', 'ok');
+      tempBox.classList.add('show');
+      document.getElementById('tempPw').textContent = d.temp_password;
+      document.getElementById('tempFor').innerHTML = 'For <b>'+esc(payload.full_name)+'</b> ('+esc(payload.email)+'). Shown once — copy it now.';
+      document.getElementById('createForm').reset();
+      suggestOffice();
+      loadUsers();
+    } catch(err) {
+      say(formMsg, 'Cannot reach the server.', 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Create account';
+    }
+  });
+
+  roleSel.addEventListener('change', suggestOffice);
+
+  document.getElementById('logout').addEventListener('click', async function(){
+    await fetch('/api/logout',{method:'POST',credentials:'same-origin'});
+    window.location.href='/';
+  });
+
+  (async function init(){
+    await loadOffices();
+    var me = await fetch('/api/me',{credentials:'same-origin'});
+    if (me.status===401){window.location.href='/login';return;}
+    var md = await me.json();
+    document.getElementById('me').textContent = md.user.full_name;
+    document.getElementById('meRole').textContent = md.user.role + (md.user.office ? ' · '+md.user.office : '');
+    await loadUsers();
+  })();
+})();
+</script>
+</body>
+</html>

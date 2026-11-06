@@ -159,7 +159,10 @@ def test_http(base: str, db_path: Path) -> None:
     check("GET /api/me works with session", status == 200 and me.get("ok") is True)
     check("session identifies the right user",
           me.get("user", {}).get("email") == "main@gmail.com", body[:160])
-    check("user payload has no password field", "password" not in body.lower())
+    # must_change_password is a boolean flag, not a secret; what must never
+    # appear is the hash or the password itself.
+    check("user payload carries no password hash", "password_hash" not in body.lower())
+    check("user payload never contains the literal password", "111111111" not in body)
 
     status, body, _ = c2.get("/dashboard")
     check("GET /dashboard works with session", status == 200 and "Movement ledger" in body)

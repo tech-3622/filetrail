@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -52,6 +53,24 @@ from security import (  # noqa: E402
     new_session_token,
     verify_password,
 )
+def password_problem(pw: str) -> str | None:
+    """Return a human explanation, or None when the password is acceptable."""
+    if len(pw) < 8:
+        return "Use at least 8 characters."
+    if pw.isdigit():
+        return "Use something other than numbers only — a short phrase is stronger and easier to remember."
+    if pw.lower() in {"password", "12345678", "11111111", "qwertyui", "admin123"}:
+        return "That password is too common. Choose another."
+    return None
+
+
+from accounts import (  # noqa: E402
+    VALID_ROLES,
+    can_create,
+    can_manage,
+    generate_temp_password,
+    rank,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = Path(os.environ.get("FILETRAIL_DB", ROOT / "filetrail.db"))
@@ -67,7 +86,8 @@ SEED_USER = {
     "email": "main@gmail.com",
     "password": "111111111",
     "full_name": "Registry Admin",
-    "role": "registrar",
+    "role": "admin",
+    "must_change_password": 0,   # demo account; real accounts are forced
 }
 
 
@@ -95,12 +115,15 @@ def init_db() -> None:
         ).fetchone()
         if not existing:
             conn.execute(
-                "INSERT INTO users (email, full_name, role, password_hash) VALUES (?,?,?,?)",
+                """INSERT INTO users (email, full_name, role, password_hash,
+                                      must_change_password, office_id)
+                   VALUES (?,?,?,?,?, (SELECT id FROM offices WHERE code='REG'))""",
                 (
                     SEED_USER["email"],
                     SEED_USER["full_name"],
                     SEED_USER["role"],
                     hash_password(SEED_USER["password"]),
+                    SEED_USER.get("must_change_password", 1),
                 ),
             )
     conn.close()
@@ -145,8 +168,12 @@ def session_user(token: str | None) -> sqlite3.Row | None:
         return None
     conn = db()
     row = conn.execute(
-        """SELECT u.id, u.email, u.full_name, u.role, s.expires_at
-             FROM sessions s JOIN users u ON u.id = s.user_id
+        """SELECT u.id, u.email, u.full_name, u.role, u.office_id,
+                  u.must_change_password, u.last_login_at, s.expires_at,
+                  o.name AS office_name, o.code AS office_code
+             FROM sessions s
+             JOIN users u ON u.id = s.user_id
+             LEFT JOIN offices o ON o.id = u.office_id
             WHERE s.token = ? AND u.is_active = 1
               AND s.expires_at > datetime('now')""",
         (token,),
@@ -191,6 +218,27 @@ def record_attempt(email: str, ip: str, success: bool) -> None:
                 "DELETE FROM login_attempts WHERE email = ? AND ip = ?", (email, ip)
             )
     conn.close()
+
+
+def user_payload(row) -> dict:
+    """The only shape of user data that ever leaves the server."""
+    return {
+        "id": row["id"],
+        "email": row["email"],
+        "full_name": row["full_name"],
+        "role": row["role"],
+        "office": row["office_name"] if "office_name" in row.keys() else None,
+        "office_code": row["office_code"] if "office_code" in row.keys() else None,
+        "must_change_password": bool(row["must_change_password"])
+        if "must_change_password" in row.keys() else False,
+    }
+
+
+def log_event(conn, actor_id, target_id, action, note=None) -> None:
+    conn.execute(
+        "INSERT INTO account_events (actor_id, target_id, action, note) VALUES (?,?,?,?)",
+        (actor_id, target_id, action, note),
+    )
 
 
 # --------------------------------------------------------------------------
@@ -274,6 +322,94 @@ class Handler(BaseHTTPRequestHandler):
         }.get(ext, "application/octet-stream")
         self._serve_file(target, ctype)
 
+    # ---- account helpers ------------------------------------------------
+    def _user_hash(self, user_id: int) -> str:
+        conn = db()
+        row = conn.execute("SELECT password_hash FROM users WHERE id = ?", (user_id,)).fetchone()
+        conn.close()
+        return row["password_hash"] if row else ""
+
+    def _user_action(self, target_id: int, action: str) -> None:
+        actor = session_user(self._session_token())
+        if not actor:
+            return self._json(401, {"ok": False, "error": "not signed in"})
+        if rank(actor["role"]) < 4:
+            return self._json(403, {"ok": False, "error":
+                                    "Only the Registrar's office can manage accounts."})
+
+        conn = db()
+        target = conn.execute(
+            "SELECT id, email, full_name, role, is_active FROM users WHERE id = ?", (target_id,)
+        ).fetchone()
+        if not target:
+            conn.close()
+            return self._json(404, {"ok": False, "error": "No such account."})
+
+        # locking yourself out is the mistake we refuse first, because the
+        # error message should explain the real reason, not a side effect of it
+        if target["id"] == actor["id"]:
+            conn.close()
+            return self._json(400, {"ok": False, "error":
+                                    "You cannot do that to your own account — "
+                                    "another admin must make this change."})
+
+        # cannot act on someone at or above your own level
+        if not can_manage(actor["role"], target["role"]):
+            conn.close()
+            return self._json(403, {"ok": False, "error":
+                                    "You cannot manage an account at or above your own level."})
+
+        if action == "reset":
+            temp = generate_temp_password()
+            with conn:
+                conn.execute(
+                    "UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?",
+                    (hash_password(temp), target_id),
+                )
+                conn.execute("DELETE FROM sessions WHERE user_id = ?", (target_id,))
+                log_event(conn, actor["id"], target_id, "password_reset")
+            conn.close()
+            return self._json(200, {
+                "ok": True,
+                "temp_password": temp,
+                "message": "Password reset. Their existing sessions were ended. "
+                           "Give this temporary password to them directly — it will not be shown again.",
+            })
+
+        if action == "status":
+            data = self._read_json()
+            enable = bool(data.get("enable"))
+            with conn:
+                conn.execute("UPDATE users SET is_active = ? WHERE id = ?",
+                             (1 if enable else 0, target_id))
+                if not enable:
+                    conn.execute("DELETE FROM sessions WHERE user_id = ?", (target_id,))
+                log_event(conn, actor["id"], target_id,
+                          "enabled" if enable else "disabled")
+            conn.close()
+            return self._json(200, {"ok": True,
+                                    "message": ("Account enabled." if enable
+                                                else "Account disabled and signed out.")})
+
+        if action == "role":
+            data = self._read_json()
+            new_role = (data.get("role") or "").strip()
+            if new_role not in VALID_ROLES:
+                conn.close()
+                return self._json(400, {"ok": False, "error": "Unknown role."})
+            if not can_create(actor["role"], new_role):
+                conn.close()
+                return self._json(403, {"ok": False, "error":
+                                        f"You cannot assign the {new_role} role."})
+            with conn:
+                conn.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, target_id))
+                log_event(conn, actor["id"], target_id, "role_changed", f"-> {new_role}")
+            conn.close()
+            return self._json(200, {"ok": True, "message": "Role updated."})
+
+        conn.close()
+        return self._json(400, {"ok": False, "error": "Unknown action."})
+
     # ---- routes ---------------------------------------------------------
     def do_GET(self) -> None:
         path = urlparse(self.path).path
@@ -291,6 +427,20 @@ class Handler(BaseHTTPRequestHandler):
                 return self._redirect("/dashboard")
             return self._static("login.html")
 
+        if path == "/change-password":
+            user = session_user(self._session_token())
+            if not user:
+                return self._redirect("/login")
+            return self._static("change-password.html")
+
+        if path == "/admin":
+            user = session_user(self._session_token())
+            if not user:
+                return self._redirect("/login")
+            if rank(user["role"]) < 3:
+                return self._redirect("/dashboard")
+            return self._static("admin.html")
+
         if path == "/dashboard":
             user = session_user(self._session_token())
             if not user:
@@ -301,7 +451,44 @@ class Handler(BaseHTTPRequestHandler):
             user = session_user(self._session_token())
             if not user:
                 return self._json(401, {"ok": False, "error": "not signed in"})
-            return self._json(200, {"ok": True, "user": dict(user)})
+            return self._json(200, {"ok": True, "user": user_payload(user)})
+
+        if path == "/api/offices":
+            user = session_user(self._session_token())
+            if not user:
+                return self._json(401, {"ok": False, "error": "not signed in"})
+            conn = db()
+            rows = conn.execute(
+                "SELECT id, code, name, kind FROM offices WHERE is_active = 1 ORDER BY id"
+            ).fetchall()
+            conn.close()
+            return self._json(200, {"ok": True, "offices": [dict(r) for r in rows]})
+
+        if path == "/api/users":
+            user = session_user(self._session_token())
+            if not user:
+                return self._json(401, {"ok": False, "error": "not signed in"})
+            if rank(user["role"]) < 3:
+                return self._json(403, {"ok": False, "error":
+                                        "Only Registry and above can view accounts."})
+            conn = db()
+            rows = conn.execute(
+                """SELECT u.id, u.email, u.full_name, u.role, u.is_active,
+                          u.must_change_password, u.last_login_at, u.created_at,
+                          o.name AS office_name
+                     FROM users u LEFT JOIN offices o ON o.id = u.office_id
+                    ORDER BY u.is_active DESC, u.full_name COLLATE NOCASE"""
+            ).fetchall()
+            conn.close()
+            accounts = [dict(r) for r in rows]
+            for a in accounts:
+                a["can_manage"] = can_manage(user["role"], a["role"])
+            return self._json(200, {
+                "ok": True,
+                "users": accounts,
+                "roles": list(VALID_ROLES),
+                "you": {"role": user["role"], "rank": rank(user["role"])},
+            })
 
         if path == "/api/files":
             user = session_user(self._session_token())
@@ -327,6 +514,11 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         ip = client_ip(self)
 
+        # /api/users/<id>/<action>
+        m = re.fullmatch(r"/api/users/(\d+)/(reset|status|role)", path)
+        if m:
+            return self._user_action(int(m.group(1)), m.group(2))
+
         if path == "/api/login":
             data = self._read_json()
             email = (data.get("email") or "").strip()
@@ -343,8 +535,8 @@ class Handler(BaseHTTPRequestHandler):
 
             conn = db()
             row = conn.execute(
-                "SELECT id, email, full_name, role, password_hash, is_active "
-                "FROM users WHERE email = ?", (email,)
+                "SELECT id, email, full_name, role, password_hash, is_active, "
+                "must_change_password FROM users WHERE email = ?", (email,)
             ).fetchone()
             conn.close()
 
@@ -364,10 +556,103 @@ class Handler(BaseHTTPRequestHandler):
             )
             return self._json(
                 200,
-                {"ok": True, "redirect": "/dashboard",
-                 "user": {"email": row["email"], "full_name": row["full_name"], "role": row["role"]}},
+                {"ok": True,
+                 "redirect": "/change-password" if row["must_change_password"] else "/dashboard",
+                 "must_change_password": bool(row["must_change_password"]),
+                 "user": {"email": row["email"], "full_name": row["full_name"],
+                          "role": row["role"]}},
                 {"Set-Cookie": cookie},
             )
+
+        # ---------------- change own password (also used by forced change) ----
+        if path == "/api/account/password":
+            user = session_user(self._session_token())
+            if not user:
+                return self._json(401, {"ok": False, "error": "not signed in"})
+            data = self._read_json()
+            current = data.get("current_password") or ""
+            new = data.get("new_password") or ""
+
+            if not verify_password(current, self._user_hash(user["id"])):
+                return self._json(400, {"ok": False, "error": "Your current password is not correct."})
+            problem = password_problem(new)
+            if problem:
+                return self._json(400, {"ok": False, "error": problem})
+            if verify_password(new, self._user_hash(user["id"])):
+                return self._json(400, {"ok": False, "error": "The new password must be different."})
+
+            conn = db()
+            with conn:
+                conn.execute(
+                    "UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?",
+                    (hash_password(new), user["id"]),
+                )
+                log_event(conn, user["id"], user["id"], "password_changed")
+            conn.close()
+            return self._json(200, {"ok": True, "message": "Password updated."})
+
+        # ---------------- admin: create an account ---------------------------
+        if path == "/api/users":
+            actor = session_user(self._session_token())
+            if not actor:
+                return self._json(401, {"ok": False, "error": "not signed in"})
+            if rank(actor["role"]) < 4:
+                return self._json(403, {"ok": False, "error":
+                                        "Only the Registrar's office can create accounts."})
+
+            data = self._read_json()
+            email = (data.get("email") or "").strip().lower()
+            full_name = (data.get("full_name") or "").strip()
+            role = (data.get("role") or "staff").strip()
+            office_id = data.get("office_id")
+
+            if "@" not in email or len(email) < 6:
+                return self._json(400, {"ok": False, "error": "Enter a valid email address."})
+            if len(full_name) < 3:
+                return self._json(400, {"ok": False, "error": "Enter the person's full name."})
+            if role not in VALID_ROLES:
+                return self._json(400, {"ok": False, "error": "Unknown role."})
+            if not can_create(actor["role"], role):
+                return self._json(403, {"ok": False, "error":
+                                        f"A {actor['role']} cannot create a {role} account."})
+
+            conn = db()
+            exists = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+            if exists:
+                conn.close()
+                return self._json(409, {"ok": False, "error": "That email already has an account."})
+            if office_id is not None:
+                ok = conn.execute("SELECT id FROM offices WHERE id = ?", (office_id,)).fetchone()
+                if not ok:
+                    conn.close()
+                    return self._json(400, {"ok": False, "error": "Unknown office."})
+
+            temp = generate_temp_password()
+            with conn:
+                cur = conn.execute(
+                    """INSERT INTO users (email, full_name, role, office_id, password_hash,
+                                          must_change_password, created_by)
+                       VALUES (?,?,?,?,?,1,?)""",
+                    (email, full_name, role, office_id, hash_password(temp), actor["id"]),
+                )
+                new_id = cur.lastrowid
+                log_event(conn, actor["id"], new_id, "created", f"role={role}")
+            row = conn.execute(
+                """SELECT u.id, u.email, u.full_name, u.role, u.is_active,
+                          u.must_change_password, u.last_login_at, o.name AS office_name
+                     FROM users u LEFT JOIN offices o ON o.id = u.office_id
+                    WHERE u.id = ?""", (new_id,)
+            ).fetchone()
+            conn.close()
+            # The temporary password is returned exactly once, in this response,
+            # and is never recoverable afterwards.
+            return self._json(201, {
+                "ok": True,
+                "user": dict(row),
+                "temp_password": temp,
+                "message": "Account created. Give this temporary password to the person "
+                           "directly — it will not be shown again.",
+            })
 
         if path == "/api/logout":
             destroy_session(self._session_token())

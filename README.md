@@ -70,11 +70,34 @@ Deliberately NOT in v0.1: file uploads/scans, SMS notifications, mobile app, int
 5. Offline-tolerant? (Registry desktops, patchy power and network — this affects architecture.)
 6. Who operates the pilot day to day — us, or a staff member we train?
 
+## Accounts and roles
+
+One admin account creates an account for each person in each office. Staff never share a login —
+the audit trail is only worth something if it names a human being.
+
+| Rank | Role | Can do |
+|---|---|---|
+| 5 | `admin` | Everything, including creating registrars |
+| 4 | `registrar` | Create/manage accounts below registrar, see everything |
+| 3 | `registry` | View the ledger and accounts list |
+| 2 | `exams` / `department` / `faculty` / `bursary` | Move and receive their own office's files |
+| 1 | `staff` | Read only |
+
+Rules enforced in code and covered by tests:
+
+- You cannot create an account at or above your own rank.
+- You cannot disable, reset or re-role anyone at or above your own rank.
+- You cannot disable or demote yourself — another admin must do it.
+- Admins never choose another person's password. The server generates one like
+  `K7QM-9XTA-3PHR`, shows it **once**, and forces the user to replace it at first sign-in.
+- Resetting a password ends that person's existing sessions immediately.
+
 ## Running it
 
 ```bash
 python3 server/app.py         # http://localhost:8000  (no pip install needed)
-python3 tests/test_auth.py    # 39 checks, end to end over real HTTP
+python3 tests/test_auth.py    # 40 checks, end to end over real HTTP
+python3 tests/test_accounts.py # 65 checks: accounts, roles, hierarchy
 ```
 
 Seeded login (v0.1 only — remove before go-live): `main@gmail.com` / `111111111`
@@ -83,6 +106,8 @@ Seeded login (v0.1 only — remove before go-live): `main@gmail.com` / `11111111
 web/index.html      public landing page (EAUED branding, single self-contained file)
 web/login.html      sign-in page
 web/dashboard.html  the movement ledger, derived from v_aging
+web/admin.html      office accounts: create, disable, reset
+web/change-password.html  forced first-sign-in password change
 server/app.py       standard-library HTTP server + JSON API + session auth
 server/security.py  PBKDF2 password hashing, session tokens
 db/schema.sql       ledger tables + views
@@ -119,3 +144,5 @@ _Format: date — decision — reason_
 - **2026-11-05** — Passwords are stored as PBKDF2 hashes, never plain text, even for the demo account. — The moment a registry password sits readable in a DB, the product is a liability.
 - **2026-11-05** — Server-side sessions in SQLite behind an HttpOnly cookie, 8-hour expiry. — Logout must really end the session; a stolen cookie should die with it.
 - **2026-11-05** — No pricing on the public site yet. — Decision by the owner; sell the pilot, not the package.
+- **2026-11-05** — One account per person per office, created by the Registrar's office; no shared logins. — A ledger that says "the department" instead of a name is not an audit trail.
+- **2026-11-05** — Admins never set another person's password; the server generates a one-time temporary password. — Nobody should know anyone else's password, and it lets us prove when it was changed.

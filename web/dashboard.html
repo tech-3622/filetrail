@@ -66,6 +66,7 @@
     <div class="who">
       <span class="avatar" id="avatar">·</span>
       <span><b id="userName">…</b><br><span id="userRole" style="font-size:12px"></span></span>
+      <a class="btn" id="adminLink" href="/admin" style="display:none">Accounts</a>
       <button class="btn" id="logout">Sign out</button>
     </div>
   </div>
@@ -164,7 +165,15 @@
     if (me.status === 401) { window.location.href = '/login'; return; }
     var meData = await me.json();
     document.getElementById('userName').textContent = meData.user.full_name;
-    document.getElementById('userRole').textContent = meData.user.email;
+    document.getElementById('userRole').textContent =
+      meData.user.role + (meData.user.office ? ' · ' + meData.user.office : '');
+    if (meData.user.must_change_password) {
+      window.location.href = '/change-password';
+      return;
+    }
+    if (['admin','registrar','registry'].indexOf(meData.user.role) !== -1) {
+      document.getElementById('adminLink').style.display = 'inline-block';
+    }
     document.getElementById('avatar').textContent = initials(meData.user.full_name);
 
     var res = await fetch('/api/files', { credentials: 'same-origin' });
