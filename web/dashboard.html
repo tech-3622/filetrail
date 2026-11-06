@@ -5,50 +5,93 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Movement ledger — FileTrail · EAUED Oyo</title>
 <style>
-  :root{
-    --navy:#12124f;--green:#166b3c;--gold:#c9992e;--ink:#14161f;--muted:#5b6172;
-    --line:#e3e6ee;--bg:#f6f7fb;--card:#fff;--red:#b42318;--amber:#b54708;--ok:#067647;
-  }
+  :root{--navy:#12124f;--green:#166b3c;--gold:#c9992e;--ink:#14161f;--muted:#5b6172;
+        --line:#e3e6ee;--bg:#f6f7fb;--card:#fff;--red:#b42318;--amber:#b54708;--ok:#067647}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;line-height:1.55}
-  header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
-  header .wrap{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  header .wrap{max-width:1120px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
   .brand{display:flex;align-items:center;gap:12px}
   .brand img{height:36px;width:auto}
   .brand .d{width:1px;height:28px;background:var(--line)}
-  .brand strong{color:var(--navy);font-size:16px;letter-spacing:-.01em}
+  .brand strong{color:var(--navy);font-size:16px}
   .brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:.03em}
-  .who{display:flex;align-items:center;gap:14px;font-size:13.5px;color:var(--muted)}
+  .who{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
   .who b{color:var(--navy)}
-  .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(150deg,#e8ecfb,#dff0e6);display:grid;place-items:center;color:var(--navy);font-weight:700;font-size:13px}
-  .btn{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:9px;padding:8px 14px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit}
+  .avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(150deg,#e8ecfb,#dff0e6);display:grid;place-items:center;color:var(--navy);font-weight:700;font-size:12px}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:9px;padding:8px 13px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block}
   .btn:hover{border-color:#c7ccda}
   .btn-primary{background:var(--green);color:#fff;border:0}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
-  main{padding:28px 0 60px}
-  .top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .btn-primary:hover{filter:brightness(1.08)}
+  .btn-sm{padding:5px 10px;font-size:12.5px}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+  main{padding:26px 0 70px}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
   h1{font-size:24px;margin:0 0 4px;letter-spacing:-.02em;color:var(--navy)}
   .top p{margin:0;color:var(--muted);font-size:14px}
-  .search{display:flex;gap:8px}
-  .search input{padding:10px 13px;border:1px solid #d6dae6;border-radius:9px;font-size:14px;font-family:inherit;min-width:240px}
-  .search input:focus{outline:0;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,107,60,.14)}
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
-  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
-  .stat .n{font-size:26px;font-weight:700;color:var(--navy);line-height:1.1;letter-spacing:-.02em}
-  .stat .l{font-size:12px;color:var(--muted);margin-top:5px;letter-spacing:.02em}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+  input,select,textarea{padding:9px 12px;border:1px solid #d6dae6;border-radius:9px;font-size:13.5px;font-family:inherit;background:#fff;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,107,60,.14)}
+  #q{min-width:250px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .stat .n{font-size:25px;font-weight:700;color:var(--navy);line-height:1.1;letter-spacing:-.02em}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:4px}
   .tablecard{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04)}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{background:#f2f4fa;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:12px 15px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{background:#f2f4fa;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700}
   tr:last-child td{border-bottom:0}
-  tr:hover td{background:#fafbff}
-  td.file{font-weight:600;color:var(--navy);white-space:nowrap}
-  .pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;border:1px solid}
+  tbody tr:hover td{background:#fafbff}
+  td.file{font-weight:600;color:var(--navy);white-space:nowrap;cursor:pointer}
+  td.file:hover{text-decoration:underline}
+  td.office{color:#333a4d}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid}
   .pill.red{background:#fef3f2;color:var(--red);border-color:#fecdca}
   .pill.amber{background:#fffaeb;color:var(--amber);border-color:#fedf89}
   .pill.green{background:#ecfdf3;color:var(--ok);border-color:#abefc6}
   .empty{padding:40px;text-align:center;color:var(--muted);font-size:14px}
-  .footnote{margin-top:16px;font-size:12.5px;color:#8a90a4}
+  .footnote{margin-top:14px;font-size:12px;color:#8a90a4}
+
+  /* ---------- modal ---------- */
+  .backdrop{position:fixed;inset:0;background:rgba(18,18,79,.42);display:none;z-index:50;padding:24px;overflow:auto}
+  .backdrop.show{display:flex;align-items:flex-start;justify-content:center}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:520px;padding:24px;box-shadow:0 30px 70px -20px rgba(0,0,0,.45);margin:auto}
+  .modal.wide{max-width:640px}
+  .modal h3{margin:0 0 4px;font-size:18px;color:var(--navy);letter-spacing:-.01em}
+  .modal .sub{margin:0 0 18px;color:var(--muted);font-size:13px}
+  .field{margin-bottom:13px}
+  label{display:block;font-size:12.5px;font-weight:600;color:#333a4d;margin-bottom:5px}
+  .field input,.field select,.field textarea{width:100%}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal-actions{display:flex;gap:9px;justify-content:flex-end;margin-top:18px}
+  .msg{display:none;padding:10px 12px;border-radius:9px;font-size:13px;margin-bottom:14px;line-height:1.45}
+  .msg.show{display:block}
+  .msg.error{background:#fef3f2;border:1px solid #fecdca;color:var(--red)}
+  .msg.ok{background:#ecfdf3;border:1px solid #abefc6;color:#067647}
+  .close-x{float:right;border:0;background:none;font-size:20px;color:#8a90a4;cursor:pointer;line-height:1}
+
+  /* ---------- trail ---------- */
+  .trailhead{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px;background:#f6f8ff;border:1px solid #dbe3fb;border-radius:11px;margin-bottom:16px}
+  .trailhead .fn{font-size:17px;font-weight:700;color:var(--navy)}
+  .trailhead .meta{font-size:12.5px;color:var(--muted)}
+  ol.trail{list-style:none;margin:0;padding:0}
+  ol.trail li{position:relative;padding:0 0 18px 30px}
+  ol.trail li:before{content:"";position:absolute;left:8px;top:6px;bottom:-6px;width:2px;background:var(--line)}
+  ol.trail li:last-child:before{display:none}
+  ol.trail .dot{position:absolute;left:0;top:2px;width:18px;height:18px;border-radius:50%;background:var(--green);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center}
+  ol.trail li.pending .dot{background:var(--gold);color:#3a2a00}
+  ol.trail li.closed .dot{background:#98a2b3}
+  ol.trail .what{font-size:13.5px;font-weight:600;color:var(--navy)}
+  ol.trail .who{font-size:12.5px;color:var(--muted)}
+  ol.trail .when{font-size:12px;color:#8a90a4}
+  ol.trail .note{font-size:12.5px;color:#475467;font-style:italic}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;background:var(--navy);color:#fff;
+         padding:11px 18px;border-radius:10px;font-size:13.5px;box-shadow:0 14px 34px -12px rgba(0,0,0,.5);
+         opacity:0;pointer-events:none;transition:opacity .2s;z-index:80;max-width:90vw}
+  .toast.show{opacity:1}
+  .toast.bad{background:#7a1d14}
+  @media (max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -58,14 +101,11 @@
     <div class="brand">
       <img src="/assets/eaued-logo.png" alt="EAUED">
       <div class="d"></div>
-      <div>
-        <strong>FileTrail</strong>
-        <small>REGISTRY · MOVEMENT LEDGER</small>
-      </div>
+      <div><strong>FileTrail</strong><small>REGISTRY · MOVEMENT LEDGER</small></div>
     </div>
     <div class="who">
       <span class="avatar" id="avatar">·</span>
-      <span><b id="userName">…</b><br><span id="userRole" style="font-size:12px"></span></span>
+      <span><b id="userName">…</b><br><span id="userRole" style="font-size:11.5px"></span></span>
       <a class="btn" id="adminLink" href="/admin" style="display:none">Accounts</a>
       <button class="btn" id="logout">Sign out</button>
     </div>
@@ -76,126 +116,331 @@
   <div class="top">
     <div>
       <h1>Where is every file?</h1>
-      <p>Live from the movement ledger. Files sitting longest are listed first.</p>
+      <p>Live from the movement ledger. Files sitting longest are listed first. Click a file number to see its trail.</p>
     </div>
-    <div class="search">
-      <input id="q" type="search" placeholder="File number, student or matric no." aria-label="Search files">
-      <button class="btn btn-primary" id="go">Search</button>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="File number, subject or office" aria-label="Search files">
+      <button class="btn btn-primary" id="registerBtn">+ Register file</button>
     </div>
   </div>
 
   <div class="stats">
-    <div class="stat"><div class="n" id="sTotal">—</div><div class="l">Files in the ledger</div></div>
+    <div class="stat"><div class="n" id="sTotal">—</div><div class="l">Files in circulation</div></div>
     <div class="stat"><div class="n" id="sRed">—</div><div class="l">Sitting 30+ days</div></div>
     <div class="stat"><div class="n" id="sAmber">—</div><div class="l">Sitting 10–29 days</div></div>
-    <div class="stat"><div class="n" id="sOffices">—</div><div class="l">Offices currently holding</div></div>
+    <div class="stat"><div class="n" id="sOffices">—</div><div class="l">Offices holding files</div></div>
   </div>
 
   <div class="tablecard">
     <table>
       <thead>
-        <tr><th>File number</th><th>Subject</th><th>Current office</th><th>Held</th><th>Flag</th></tr>
+        <tr><th>File number</th><th>Subject</th><th>Current office</th><th>Held</th><th>Flag</th><th></th></tr>
       </thead>
-      <tbody id="rows">
-        <tr><td colspan="5" class="empty">Loading ledger…</td></tr>
-      </tbody>
+      <tbody id="rows"><tr><td colspan="6" class="empty">Loading ledger…</td></tr></tbody>
     </table>
   </div>
 
   <p class="footnote">
-    Held-days are derived from the newest movement on each file — the ledger is append-only,
-    so history cannot be rewritten. Demo data.
+    Every change adds a new movement; nothing is edited or deleted, so the trail cannot be rewritten.
+    Held-days are derived from the newest movement on each file.
   </p>
 </main>
 
+<!-- ============ register modal ============ -->
+<div class="backdrop" id="registerBackdrop">
+  <div class="modal">
+    <button class="close-x" data-close="registerBackdrop">×</button>
+    <h3>Register a file</h3>
+    <p class="sub">Record a physical folder entering the system. The file number should be the one already written on it.</p>
+    <div id="regMsg" class="msg"></div>
+    <form id="registerForm">
+      <div class="field">
+        <label for="r_number">File number</label>
+        <input id="r_number" placeholder="e.g. CSC/2025/0416" required>
+      </div>
+      <div class="field">
+        <label for="r_subject">What is the file about?</label>
+        <input id="r_subject" placeholder="e.g. Clearance — final year" required>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="r_type">Type</label>
+          <select id="r_type">
+            <option value="clearance">Clearance</option>
+            <option value="result">Result</option>
+            <option value="transcript">Transcript</option>
+            <option value="student">Student file</option>
+            <option value="staff">Staff file</option>
+            <option value="procurement">Procurement</option>
+            <option value="general">General</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="r_office">Starting office</label>
+          <select id="r_office"></select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="r_ref">Matric / staff number <span style="color:#8a90a4;font-weight:400">(optional)</span></label>
+          <input id="r_ref" placeholder="CSC/19/1042">
+        </div>
+        <div class="field">
+          <label for="r_name">Name on the file <span style="color:#8a90a4;font-weight:400">(optional)</span></label>
+          <input id="r_name" placeholder="Fatima Suleiman">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" data-close="registerBackdrop">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="regSubmit">Register file</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ move modal ============ -->
+<div class="backdrop" id="moveBackdrop">
+  <div class="modal">
+    <button class="close-x" data-close="moveBackdrop">×</button>
+    <h3>Sign for a file</h3>
+    <p class="sub" id="moveSub">Record the file arriving at an office. Your name goes on the movement.</p>
+    <div id="moveMsg" class="msg"></div>
+    <form id="moveForm">
+      <div class="field">
+        <label>File</label>
+        <input id="m_file" readonly style="background:#f6f7fb;font-weight:600;color:#12124f">
+      </div>
+      <div class="field">
+        <label>Currently with</label>
+        <input id="m_from" readonly style="background:#f6f7fb">
+      </div>
+      <div class="field">
+        <label for="m_office">Receiving office</label>
+        <select id="m_office" required></select>
+      </div>
+      <div class="field">
+        <label for="m_note">Note <span style="color:#8a90a4;font-weight:400">(optional)</span></label>
+        <input id="m_note" placeholder="e.g. awaiting HOD signature">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" data-close="moveBackdrop">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="moveSubmit">Record movement</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ trail modal ============ -->
+<div class="backdrop" id="trailBackdrop">
+  <div class="modal wide">
+    <button class="close-x" data-close="trailBackdrop">×</button>
+    <h3 id="trailTitle">File trail</h3>
+    <p class="sub">Every handoff, in order, with the name of the person who signed.</p>
+    <div id="trailBody"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn" data-close="trailBackdrop">Close</button>
+      <button type="button" class="btn btn-primary" id="trailMove">Sign for this file →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
 (function () {
+  var cache = [], offices = [], me = null, movingNumber = null;
   var rows = document.getElementById('rows');
-  var q = document.getElementById('q');
-  var cache = [];
+  var toast = document.getElementById('toast');
 
-  function initials(name) {
-    return (name || '?').split(/\s+/).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function say(el,text,kind){el.textContent=text;el.className='msg show '+(kind||'error');}
+  function clear(el){el.className='msg';}
+  function open(id){document.getElementById(id).classList.add('show');}
+  function close(id){document.getElementById(id).classList.remove('show');}
+  function note(text,bad){
+    toast.textContent=text; toast.className='toast show'+(bad?' bad':'');
+    clearTimeout(note._t); note._t=setTimeout(function(){toast.className='toast';},3600);
   }
+  document.querySelectorAll('[data-close]').forEach(function(b){
+    b.addEventListener('click',function(){close(b.getAttribute('data-close'));});
+  });
+  document.querySelectorAll('.backdrop').forEach(function(b){
+    b.addEventListener('click',function(e){if(e.target===b)b.classList.remove('show');});
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape')document.querySelectorAll('.backdrop.show').forEach(function(b){b.classList.remove('show');});
+  });
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-
-  function render(list) {
-    if (!list.length) {
-      rows.innerHTML = '<tr><td colspan="5" class="empty">No files match that search.</td></tr>';
-      return;
-    }
-    rows.innerHTML = list.map(function (f) {
-      var d = Number(f.days_held || 0);
-      var flag = f.flag || (d >= 30 ? 'red' : d >= 10 ? 'amber' : 'green');
-      return '<tr>' +
-        '<td class="file">' + esc(f.file_number) + '</td>' +
-        '<td>' + esc(f.subject) + '</td>' +
-        '<td>' + esc(f.current_office) + '</td>' +
-        '<td>' + d + ' day' + (d === 1 ? '' : 's') + '</td>' +
-        '<td><span class="pill ' + flag + '">' + esc(f.status || flag) + '</span></td>' +
-        '</tr>';
+  function officeOptions(selected){
+    return offices.map(function(o){
+      return '<option value="'+o.id+'"'+(o.id===selected?' selected':'')+'>'+esc(o.code+' — '+o.name)+'</option>';
     }).join('');
   }
 
-  function stats(list) {
-    document.getElementById('sTotal').textContent = list.length;
-    document.getElementById('sRed').textContent = list.filter(function (f) { return Number(f.days_held) >= 30; }).length;
-    document.getElementById('sAmber').textContent = list.filter(function (f) { var d = Number(f.days_held); return d >= 10 && d < 30; }).length;
-    var offices = {};
-    list.forEach(function (f) { if (f.current_office) offices[f.current_office] = 1; });
-    document.getElementById('sOffices').textContent = Object.keys(offices).length;
+  function render(list){
+    if(!list.length){
+      rows.innerHTML='<tr><td colspan="6" class="empty">No files match that search.</td></tr>';
+      return;
+    }
+    rows.innerHTML=list.map(function(f){
+      var d=Number(f.days_held||0);
+      return '<tr>'+
+        '<td class="file" data-open="'+esc(f.file_number)+'">'+esc(f.file_number)+'</td>'+
+        '<td>'+esc(f.subject)+
+          (f.subject_name?'<br><span style="color:#8a90a4;font-size:12px">'+esc(f.subject_name)+'</span>':'')+'</td>'+
+        '<td class="office">'+esc(f.current_office)+'</td>'+
+        '<td>'+d+' day'+(d===1?'':'s')+'</td>'+
+        '<td><span class="pill '+(f.flag||'green')+'">'+esc(f.status)+'</span></td>'+
+        '<td style="text-align:right"><button class="btn btn-sm" data-move="'+esc(f.file_number)+'">Sign for →</button></td>'+
+      '</tr>';
+    }).join('');
   }
 
-  function filter() {
-    var term = q.value.trim().toLowerCase();
-    if (!term) return render(cache);
-    render(cache.filter(function (f) {
-      return (f.file_number + ' ' + f.subject + ' ' + f.current_office).toLowerCase().indexOf(term) !== -1;
+  function stats(list){
+    document.getElementById('sTotal').textContent=list.length;
+    document.getElementById('sRed').textContent=list.filter(function(f){return Number(f.days_held)>=30;}).length;
+    document.getElementById('sAmber').textContent=list.filter(function(f){var d=Number(f.days_held);return d>=10&&d<30;}).length;
+    var o={};list.forEach(function(f){if(f.current_office)o[f.current_office]=1;});
+    document.getElementById('sOffices').textContent=Object.keys(o).length;
+  }
+
+  function filter(){
+    var t=document.getElementById('q').value.trim().toLowerCase();
+    if(!t)return render(cache);
+    render(cache.filter(function(f){
+      return (f.file_number+' '+f.subject+' '+f.current_office+' '+(f.subject_name||''))
+        .toLowerCase().indexOf(t)!==-1;
     }));
   }
 
-  async function boot() {
-    // who am I? (redirects to /login if the session is gone)
-    var me = await fetch('/api/me', { credentials: 'same-origin' });
-    if (me.status === 401) { window.location.href = '/login'; return; }
-    var meData = await me.json();
-    document.getElementById('userName').textContent = meData.user.full_name;
-    document.getElementById('userRole').textContent =
-      meData.user.role + (meData.user.office ? ' · ' + meData.user.office : '');
-    if (meData.user.must_change_password) {
-      window.location.href = '/change-password';
-      return;
-    }
-    if (['admin','registrar','registry'].indexOf(meData.user.role) !== -1) {
-      document.getElementById('adminLink').style.display = 'inline-block';
-    }
-    document.getElementById('avatar').textContent = initials(meData.user.full_name);
-
-    var res = await fetch('/api/files', { credentials: 'same-origin' });
-    if (res.status === 401) { window.location.href = '/login'; return; }
-    var data = await res.json();
-    cache = data.files || [];
-    stats(cache);
-    render(cache);
+  async function loadFiles(){
+    var res=await fetch('/api/files',{credentials:'same-origin'});
+    if(res.status===401){window.location.href='/login';return;}
+    var d=await res.json();
+    cache=d.files||[]; stats(cache); render(cache);
   }
 
-  document.getElementById('go').addEventListener('click', filter);
-  q.addEventListener('input', filter);
-  q.addEventListener('keydown', function (e) { if (e.key === 'Enter') filter(); });
+  function openMove(number,currentOffice){
+    movingNumber=number;
+    clear(document.getElementById('moveMsg'));
+    document.getElementById('m_file').value=number;
+    document.getElementById('m_from').value=currentOffice||'—';
+    document.getElementById('m_note').value='';
+    document.getElementById('m_office').innerHTML=officeOptions(null);
+    open('moveBackdrop');
+  }
 
-  document.getElementById('logout').addEventListener('click', async function () {
-    await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
-    window.location.href = '/';
+  async function openTrail(number){
+    var res=await fetch('/api/files/'+encodeURIComponent(number),{credentials:'same-origin'});
+    var d=await res.json();
+    if(!d.ok){note(d.error||'Could not load that file.',true);return;}
+    var f=d.file,fid='trail-'+f.file_number.replace(/[^a-z0-9]/gi,'');
+    document.getElementById('trailTitle').textContent=f.file_number;
+    var steps=(d.trail||[]).map(function(s,i){
+      var cls=s.status==='closed'?'closed':(s.status==='pending_approval'?'pending':'');
+      var arrow=s.from_code?(esc(s.from_code)+' → '+esc(s.to_code||'—')):'Registered → '+esc(s.to_code||'—');
+      return '<li class="'+cls+'"><span class="dot">'+(i+1)+'</span>'+
+        '<div class="what">'+arrow+'</div>'+
+        '<div class="who">'+esc(s.signature||'—')+(s.recorded_by_name&&s.recorded_by_name!==s.signature?' · keyed by '+esc(s.recorded_by_name):'')+'</div>'+
+        (s.note?'<div class="note">'+esc(s.note)+'</div>':'')+
+        '<div class="when">'+esc(s.moved_at)+'</div></li>';
+    }).join('');
+
+    document.getElementById('trailBody').innerHTML=
+      '<div class="trailhead"><div><div class="fn">'+esc(f.subject)+'</div>'+
+      '<div class="meta">'+esc(f.subject_name||'—')+(f.subject_ref?' · '+esc(f.subject_ref):'')+'</div></div>'+
+      '<div style="text-align:right"><div class="meta">Currently with</div>'+
+      '<div style="font-weight:700;color:#12124f">'+esc(f.current_office||'—')+'</div>'+
+      '<div class="meta">held '+f.days_held+' days · <span class="pill '+(f.flag||'green')+'">'+esc(f.status)+'</span></div></div></div>'+
+      '<ol class="trail">'+steps+'</ol>';
+
+    var btn=document.getElementById('trailMove');
+    btn.onclick=function(){close('trailBackdrop');openMove(f.file_number,f.current_office);};
+    open('trailBackdrop');
+  }
+
+  rows.addEventListener('click',function(e){
+    var t=e.target.closest('[data-open],[data-move]');
+    if(!t)return;
+    if(t.hasAttribute('data-open'))return openTrail(t.getAttribute('data-open'));
+    var num=t.getAttribute('data-move');
+    var row=cache.filter(function(x){return x.file_number===num;})[0];
+    openMove(num,row?row.current_office:'');
   });
 
-  boot().catch(function () {
-    rows.innerHTML = '<tr><td colspan="5" class="empty">Could not load the ledger. Is the server running?</td></tr>';
+  document.getElementById('q').addEventListener('input',filter);
+
+  document.getElementById('registerBtn').addEventListener('click',function(){
+    clear(document.getElementById('regMsg'));
+    document.getElementById('registerForm').reset();
+    document.getElementById('r_office').innerHTML=officeOptions(null);
+    open('registerBackdrop');
+    setTimeout(function(){document.getElementById('r_number').focus();},50);
   });
+
+  document.getElementById('registerForm').addEventListener('submit',async function(e){
+    e.preventDefault();
+    var msg=document.getElementById('regMsg'), btn=document.getElementById('regSubmit');
+    clear(msg); btn.disabled=true; btn.textContent='Registering…';
+    try{
+      var res=await fetch('/api/files',{method:'POST',credentials:'same-origin',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          file_number:document.getElementById('r_number').value.trim(),
+          subject:document.getElementById('r_subject').value.trim(),
+          file_type:document.getElementById('r_type').value,
+          office_id:Number(document.getElementById('r_office').value),
+          subject_ref:document.getElementById('r_ref').value.trim(),
+          subject_name:document.getElementById('r_name').value.trim()
+        })});
+      var d=await res.json().catch(function(){return {};});
+      if(!d.ok){say(msg,d.error||'Could not register the file.');return;}
+      close('registerBackdrop'); note(d.message||'File registered.');
+      await loadFiles();
+    }catch(err){say(msg,'Cannot reach the server.');}
+    finally{btn.disabled=false;btn.textContent='Register file';}
+  });
+
+  document.getElementById('moveForm').addEventListener('submit',async function(e){
+    e.preventDefault();
+    var msg=document.getElementById('moveMsg'), btn=document.getElementById('moveSubmit');
+    clear(msg); btn.disabled=true; btn.textContent='Recording…';
+    try{
+      var res=await fetch('/api/files/'+encodeURIComponent(movingNumber)+'/move',{
+        method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          to_office_id:Number(document.getElementById('m_office').value),
+          note:document.getElementById('m_note').value.trim()
+        })});
+      var d=await res.json().catch(function(){return {};});
+      if(!d.ok){say(msg,d.error||'Could not record the movement.');return;}
+      close('moveBackdrop'); note(d.message||'Movement recorded.');
+      await loadFiles();
+    }catch(err){say(msg,'Cannot reach the server.');}
+    finally{btn.disabled=false;btn.textContent='Record movement';}
+  });
+
+  document.getElementById('logout').addEventListener('click',async function(){
+    await fetch('/api/logout',{method:'POST',credentials:'same-origin'});
+    window.location.href='/';
+  });
+
+  (async function boot(){
+    var res=await fetch('/api/me',{credentials:'same-origin'});
+    if(res.status===401){window.location.href='/login';return;}
+    me=(await res.json()).user;
+    if(me.must_change_password){window.location.href='/change-password';return;}
+    document.getElementById('userName').textContent=me.full_name;
+    document.getElementById('userRole').textContent=me.role+(me.office?' · '+me.office:'');
+    document.getElementById('avatar').textContent=(me.full_name||'?').split(/\s+/).map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    if(['admin','registrar','registry'].indexOf(me.role)!==-1){
+      document.getElementById('adminLink').style.display='inline-block';
+    }
+    var o=await fetch('/api/offices',{credentials:'same-origin'});
+    offices=(await o.json()).offices||[];
+    document.getElementById('r_office').innerHTML=officeOptions(null);
+    await loadFiles();
+  })();
 })();
 </script>
 </body>

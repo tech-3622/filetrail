@@ -70,6 +70,19 @@ Deliberately NOT in v0.1: file uploads/scans, SMS notifications, mobile app, int
 5. Offline-tolerant? (Registry desktops, patchy power and network — this affects architecture.)
 6. Who operates the pilot day to day — us, or a staff member we train?
 
+## The two actions that matter
+
+```bash
+POST /api/files                    register a physical file at a starting office
+POST /api/files/<number>/move      an office signs for it — appends one movement
+POST /api/files/<number>/close     take it out of circulation
+GET  /api/files/<number>           the full signed trail
+```
+
+A file's current office is **derived** from its newest movement. The `movements`
+table is append-only, and two database triggers abort any `UPDATE` or `DELETE`
+against it — so history cannot be quietly rewritten, by anyone, including an admin.
+
 ## Accounts and roles
 
 One admin account creates an account for each person in each office. Staff never share a login —
@@ -98,6 +111,7 @@ Rules enforced in code and covered by tests:
 python3 server/app.py         # http://localhost:8000  (no pip install needed)
 python3 tests/test_auth.py    # 40 checks, end to end over real HTTP
 python3 tests/test_accounts.py # 65 checks: accounts, roles, hierarchy
+python3 tests/test_files.py   # 37 checks: register, move, close, append-only
 ```
 
 Seeded login (v0.1 only — remove before go-live): `main@gmail.com` / `111111111`
@@ -146,3 +160,6 @@ _Format: date — decision — reason_
 - **2026-11-05** — No pricing on the public site yet. — Decision by the owner; sell the pilot, not the package.
 - **2026-11-05** — One account per person per office, created by the Registrar's office; no shared logins. — A ledger that says "the department" instead of a name is not an audit trail.
 - **2026-11-05** — Admins never set another person's password; the server generates a one-time temporary password. — Nobody should know anyone else's password, and it lets us prove when it was changed.
+- **2026-11-06** — Register / move / close are the only three write operations. — If a feature cannot be expressed as "this file moved", it belongs in v0.2.
+- **2026-11-06** — Closing a file is itself a movement record, not a delete. — A closed file must still explain itself years later.
+- **2026-11-06** — API handlers wrapped so an unexpected error returns 500 instead of dropping the connection. — A dropped connection looks like "the system is broken"; a 500 with a log line looks like a bug we can fix.

@@ -44,7 +44,7 @@ from datetime import datetime, timedelta, timezone
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from security import (  # noqa: E402
@@ -329,6 +329,151 @@ class Handler(BaseHTTPRequestHandler):
         conn.close()
         return row["password_hash"] if row else ""
 
+    # ---- file movement ---------------------------------------------------
+    def _file_action(self, number: str, action: str) -> None:
+        """
+        The heart of the system. Every change is a NEW movement row; nothing is
+        ever updated or deleted, so the trail cannot be rewritten.
+
+        Two operations:
+          move  — the receiving office signs for the file. Closes any open
+                  approval on the previous office and opens a new one here.
+          close — the file leaves circulation (archived / completed).
+        """
+        actor = session_user(self._session_token())
+        if not actor:
+            return self._json(401, {"ok": False, "error": "not signed in"})
+
+        conn = db()
+        f = conn.execute("SELECT id, file_number, subject FROM files WHERE file_number = ?",
+                         (number,)).fetchone()
+        if not f:
+            conn.close()
+            return self._json(404, {"ok": False, "error": "No file with that number."})
+
+        current = conn.execute(
+            """SELECT m.*, o.code AS to_code, o.name AS to_name
+                 FROM movements m LEFT JOIN offices o ON o.id = m.to_office_id
+                WHERE m.file_id = ? ORDER BY m.id DESC LIMIT 1""", (f["id"],)
+        ).fetchone()
+
+        if action == "close":
+            if current and current["status"] == "closed":
+                conn.close()
+                return self._json(400, {"ok": False, "error": "That file is already closed."})
+            data = self._read_json()
+            with conn:
+                conn.execute(
+                    """INSERT INTO movements (file_id, from_office_id, to_office_id, status,
+                                              note, recorded_by, signature)
+                       VALUES (?,?,NULL,'closed',?,?,?)""",
+                    (f["id"], current["to_office_id"] if current else None,
+                     (data.get("note") or "Closed").strip()[:200],
+                     actor["id"], actor["full_name"]),
+                )
+                conn.execute("UPDATE files SET is_closed = 1 WHERE id = ?", (f["id"],))
+            conn.close()
+            return self._json(200, {"ok": True, "message": f"{number} closed."})
+
+        # ---- move --------------------------------------------------------
+        data = self._read_json()
+        try:
+            to_office_id = int(data.get("to_office_id"))
+        except (TypeError, ValueError):
+            conn.close()
+            return self._json(400, {"ok": False, "error": "Choose the office receiving the file."})
+
+        office = conn.execute("SELECT id, code, name FROM offices WHERE id = ? AND is_active = 1",
+                              (to_office_id,)).fetchone()
+        if not office:
+            conn.close()
+            return self._json(400, {"ok": False, "error": "Unknown office."})
+
+        if current and current["status"] == "closed":
+            conn.close()
+            return self._json(400, {"ok": False, "error":
+                                    "That file is closed. Opening a closed file needs the Registrar."})
+
+        if current and current["to_office_id"] == to_office_id and current["status"] != "returned":
+            conn.close()
+            return self._json(400, {"ok": False, "error":
+                                    f"{number} is already with {office['name']}."})
+
+        note = (data.get("note") or "").strip()[:200] or None
+        from_office_id = current["to_office_id"] if current else None
+
+        with conn:
+            conn.execute(
+                """INSERT INTO movements (file_id, from_office_id, to_office_id, status,
+                                          note, recorded_by, signature)
+                   VALUES (?,?,?,'received',?,?,?)""",
+                (f["id"], from_office_id, to_office_id, note,
+                 actor["id"], actor["full_name"]),
+            )
+        row = conn.execute(
+            """SELECT current_office, status, days_held
+                 FROM v_where_is WHERE file_number = ?""", (number,)).fetchone()
+        conn.close()
+        return self._json(200, {
+            "ok": True,
+            "message": f"{number} signed for by {office['name']} — recorded as {actor['full_name']}.",
+            "file": dict(row) if row else None,
+        })
+
+    # ---- register a new file --------------------------------------------
+    def _register_file(self) -> None:
+        actor = session_user(self._session_token())
+        if not actor:
+            return self._json(401, {"ok": False, "error": "not signed in"})
+
+        data = self._read_json()
+        number = (data.get("file_number") or "").strip()
+        subject = (data.get("subject") or "").strip()
+        ftype = (data.get("file_type") or "general").strip()
+        subject_ref = (data.get("subject_ref") or "").strip() or None
+        subject_name = (data.get("subject_name") or "").strip() or None
+        office_id = data.get("office_id")
+
+        if len(number) < 2:
+            return self._json(400, {"ok": False, "error": "Enter the file number as written on the folder."})
+        if len(subject) < 3:
+            return self._json(400, {"ok": False, "error": "Say briefly what the file is about."})
+        if ftype not in ("student", "result", "clearance", "transcript", "staff",
+                         "procurement", "general"):
+            return self._json(400, {"ok": False, "error": "Unknown file type."})
+        try:
+            office_id = int(office_id)
+        except (TypeError, ValueError):
+            return self._json(400, {"ok": False, "error": "Choose the office that starts with the file."})
+
+        conn = db()
+        if conn.execute("SELECT 1 FROM files WHERE file_number = ?", (number,)).fetchone():
+            conn.close()
+            return self._json(409, {"ok": False, "error": f"A file numbered {number} already exists."})
+        office = conn.execute("SELECT id, name FROM offices WHERE id = ? AND is_active = 1",
+                              (office_id,)).fetchone()
+        if not office:
+            conn.close()
+            return self._json(400, {"ok": False, "error": "Unknown office."})
+
+        with conn:
+            cur = conn.execute(
+                """INSERT INTO files (file_number, subject, file_type, subject_ref, subject_name)
+                   VALUES (?,?,?,?,?)""",
+                (number, subject, ftype, subject_ref, subject_name),
+            )
+            file_id = cur.lastrowid
+            conn.execute(
+                """INSERT INTO movements (file_id, from_office_id, to_office_id, status,
+                                          note, recorded_by, signature)
+                   VALUES (?,NULL,?,'received','Registered',?,?)""",
+                (file_id, office_id, actor["id"], actor["full_name"]),
+            )
+        conn.close()
+        return self._json(201, {"ok": True,
+                                "message": f"{number} registered at {office['name']}.",
+                                "file_number": number})
+
     def _user_action(self, target_id: int, action: str) -> None:
         actor = session_user(self._session_token())
         if not actor:
@@ -412,6 +557,18 @@ class Handler(BaseHTTPRequestHandler):
 
     # ---- routes ---------------------------------------------------------
     def do_GET(self) -> None:
+        try:
+            self._route_get()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        except Exception as exc:                      # noqa: BLE001
+            sys.stderr.write(f"ERROR in GET {self.path}: {exc!r}\n")
+            try:
+                self._json(500, {"ok": False, "error": "Internal error. Check the server log."})
+            except Exception:
+                pass
+
+    def _route_get(self) -> None:
         path = urlparse(self.path).path
 
         if path in ("/", "/index.html"):
@@ -496,11 +653,54 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(401, {"ok": False, "error": "not signed in"})
             conn = db()
             rows = conn.execute(
-                "SELECT file_number, subject, current_office, status, days_held "
-                "FROM v_aging LIMIT 50"
+                """SELECT w.file_number, w.subject, w.file_type, w.subject_name,
+                          w.current_office, w.current_office_code, w.status,
+                          w.days_held, w.signature, w.since,
+                          CASE WHEN w.days_held >= 30 THEN 'red'
+                               WHEN w.days_held >= 10 THEN 'amber'
+                               ELSE 'green' END AS flag,
+                          f.id AS file_id
+                     FROM v_where_is w
+                     JOIN files f ON f.file_number = w.file_number
+                    WHERE w.status NOT IN ('closed')
+                    ORDER BY w.days_held DESC, w.file_number"""
             ).fetchall()
             conn.close()
             return self._json(200, {"ok": True, "files": [dict(r) for r in rows]})
+
+        # ---- one file, with its full trail -------------------------------
+        if (m := re.fullmatch(r"/api/files/([^/]+)", path)):
+            user = session_user(self._session_token())
+            if not user:
+                return self._json(401, {"ok": False, "error": "not signed in"})
+            number = unquote(m.group(1))
+            conn = db()
+            f = conn.execute(
+                """SELECT f.id, f.file_number, f.subject, f.file_type, f.subject_ref,
+                          f.subject_name, f.opened_on,
+                          w.current_office, w.current_office_code, w.status,
+                          w.days_held,
+                          CASE WHEN w.days_held >= 30 THEN 'red'
+                               WHEN w.days_held >= 10 THEN 'amber'
+                               ELSE 'green' END AS flag
+                     FROM files f JOIN v_where_is w ON w.file_number = f.file_number
+                    WHERE f.file_number = ?""", (number,)
+            ).fetchone()
+            if not f:
+                conn.close()
+                return self._json(404, {"ok": False, "error": "No file with that number."})
+            steps = conn.execute(
+                """SELECT step, moved_at, from_code, to_code, status, signature, note,
+                          recorded_by_name
+                     FROM v_trail WHERE file_number = ? ORDER BY step""", (number,)
+            ).fetchall()
+            offices = conn.execute(
+                "SELECT id, code, name, kind FROM offices WHERE is_active = 1 ORDER BY id"
+            ).fetchall()
+            conn.close()
+            return self._json(200, {"ok": True, "file": dict(f),
+                                    "trail": [dict(r) for r in steps],
+                                    "offices": [dict(r) for r in offices]})
 
         if path == "/healthz":
             return self._json(200, {"ok": True, "service": "filetrail"})
@@ -511,6 +711,18 @@ class Handler(BaseHTTPRequestHandler):
         self.do_GET()
 
     def do_POST(self) -> None:
+        try:
+            self._route_post()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        except Exception as exc:                      # noqa: BLE001
+            sys.stderr.write(f"ERROR in POST {self.path}: {exc!r}\n")
+            try:
+                self._json(500, {"ok": False, "error": "Internal error. Check the server log."})
+            except Exception:
+                pass
+
+    def _route_post(self) -> None:
         path = urlparse(self.path).path
         ip = client_ip(self)
 
@@ -518,6 +730,11 @@ class Handler(BaseHTTPRequestHandler):
         m = re.fullmatch(r"/api/users/(\d+)/(reset|status|role)", path)
         if m:
             return self._user_action(int(m.group(1)), m.group(2))
+
+        # /api/files/<number>/<action>
+        mf = re.fullmatch(r"/api/files/([^/]+)/(move|close)", path)
+        if mf:
+            return self._file_action(unquote(mf.group(1)), mf.group(2))
 
         if path == "/api/login":
             data = self._read_json()
@@ -563,6 +780,9 @@ class Handler(BaseHTTPRequestHandler):
                           "role": row["role"]}},
                 {"Set-Cookie": cookie},
             )
+
+        if path == "/api/files":
+            return self._register_file()
 
         # ---------------- change own password (also used by forced change) ----
         if path == "/api/account/password":
